@@ -1,0 +1,4 @@
+; $Id$
+name = ОКВЭД
+description = Показывает базу ОКВЭД.
+core = 6.x

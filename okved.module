@@ -1,0 +1,62 @@
+<?php
+
+function okved_help($path, $arg) {
+  $output = '';
+  switch ($path) {
+    case "admin/help#okved":
+      $output = '<p>'.  t("Информация об ОКВЭД") .'</p>';
+      break;
+  }
+  return $output;
+} // function okved_help
+
+
+function okved_perm() {
+  return array('access okved content');
+} // function okved_perm()
+
+/**
+ * Implementation of hook_menu().
+ */
+function okved_menu() {
+  $items['okved'] = array(
+    'title' => 'Оквэд',
+    'description' => 'Показывает базу ОКВЭД.',
+    'page callback' => 'okved_page',
+    'access arguments' => array('access okved content'),
+    'type' => MENU_SUGGESTED_ITEM,
+  );
+
+  return $items;
+}
+
+/**
+ * Implementation of hook_block().
+ */
+function okved_block($op = 'list', $delta = 0) {
+  if ($op == 'list') {
+    $blocks[0]['info'] = t('ОКВЭд блок');
+    return $blocks;
+  }
+  elseif ($op == 'view') {
+    if (user_access('access content')) {
+      $block['subject'] = t('Syndicate');
+
+      $block['content'] = theme('feed_icon', url($feedurl), t('Syndicate'));
+      $block['content'] .= '<div class="more-link">'. l(t('more'), 'okved', array('title' => t('View the site map to see more RSS feeds.'))) ."</div>\n";
+
+      return $block;
+    }
+  }
+}
+
+function okved_page() {
+
+  $output = '123';
+
+  return $output;
+}
+
+
+
+?>
