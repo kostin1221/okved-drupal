@@ -52,7 +52,34 @@ function okved_block($op = 'list', $delta = 0) {
 
 function okved_page() {
 
-  $output = '123';
+$error="";
+    if ($db = new SQLite3('qokved.db', 0666, $error)) {
+		
+        $q = $db->query('SELECT * FROM versions');
+  
+     //   print $q->numRows();
+    /*    while ($row = $q->fetch()){
+			print($row['id']."\n");
+			print($row['name']."\n");
+			
+		}*/
+
+     /*   if ($q) {
+            $db->queryExec('CREATE TABLE tablename (id int, requests int, PRIMARY KEY (id)); INSERT INTO tablename VALUES (1,1)');
+            $hits = 1;
+        } else {
+            $result = $q->fetchSingle();
+            $hits = $result+1;
+        }
+        $db->queryExec("UPDATE tablename SET requests = '$hits' WHERE id = 1");
+       */ 
+    } else {
+		//output=$error;
+      //  die($err);
+      
+    }
+
+ // $output = '123';
 
   return $output;
 }
