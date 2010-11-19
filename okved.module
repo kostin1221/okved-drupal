@@ -55,7 +55,7 @@ function _razdel_title_callback($base_string) {
 function okveds_search($filter) {
   // Make sure you don't trust the URL to be safe! Always check for exploits.
 
-return okveds_print($first);
+return okveds_search_print($filter);
 }
 
 function okveds_page($first) {

@@ -41,7 +41,7 @@ return drupal_get_form('form_filter') . theme('table', $headers, $rows, $table_a
 
 }
 
-function okveds_from_query($q)
+function okveds_from_query($q, $search = "")
 {
 	drupal_add_js('$(document).ready(function(){
  
@@ -55,6 +55,11 @@ function okveds_from_query($q)
 	$headers = array('Номер', 'Наименование / Дополнительное описание при наведении');
 	while ( ($row = $q->fetchArray()))
 	{
+		if ($search != "" && !stripos($row['name'], $search)){
+
+			 continue;
+		 }
+		
 		if ($row['addition'] != "") 
 		{
 			$rows[] = array('class' => 'block',
@@ -68,6 +73,18 @@ function okveds_from_query($q)
 	}
 
 return(theme('table', $headers, $rows, $table_attributes));
+}
+
+function okveds_search_print($search)
+{
+$db = new SQLite3('/srv/www/htdocs/sites/all/modules/okved/qokved.db', 0666, $error);
+$version = 1;
+
+$return="";	
+
+$q = $db->query('SELECT * FROM okveds_'.$version);
+  
+return drupal_get_form('form_filter') . okveds_from_query($q, $search);
 }
 
 function okveds_print($rasdel)
@@ -102,74 +119,6 @@ $q = $db->query('SELECT * FROM razdelz_'.$version . ' WHERE rid='.$rasdel . ' LI
 $row = $q->fetchArray();
 
 return $row['name'];
-}
-
-
-class Okved {
-	protected $version = 1;
-	protected $db;
-	public function __construct( /*...*/ ) {
-		$error="";	
-		$this->db = new SQLite3('/srv/www/htdocs/sites/all/modules/okved/qokved.db', 0666, $error);
-    }
-    
-	public function print_okved()
-	{
-	$return="";		
-	$q = $this->db->query('SELECT * FROM versions');
-	  
-	$return .= '<form>
-			<select name="ComboBox" style="width : 200">';
-		  
-		while ( ($row = $q->fetchArray()))
-		{
-			$return .= sprintf( "<option value=\"%b\">%s</option>", $row['id'], $row['name']);
-		}
-
-	$return .=       '</select>
-	</form>';
-
-	return($return);
-	}
-	
-	function form_example_tutorial_2(&$form_state) {
-  $form['description'] = array(
-    '#type' => 'item',
-    '#title' => t('A simple form with a submit button'),
-  );
-
-  $form['name'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Name'),
-  );
-
-  // Adds a simple submit button that refreshes the form and clears its contents -- this is the default behavior for forms.
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => 'Submit',
-  );
-  return $form;
-}
-
-	public function okveds_array()
-	{
-	$return="";		
-	$q = $this->db->query('SELECT * FROM razdelz_'.$version);
-	  
-	$return .= '<form>
-			<select name="ComboBox" style="width : 200">';
-		  
-		while ( ($row = $q->fetchArray()))
-		{
-			$return .= sprintf( "<option value=\"%b\">%s</option>", $row['id'], $row['name']);
-		}
-
-	$return .=       '</select>
-	</form>';
-
-	return($return);
-	}
-
 }
 
 ?>
