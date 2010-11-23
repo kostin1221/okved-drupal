@@ -21,7 +21,7 @@ function okved_perm() {
  */
 function okved_menu() {
   $items['okved'] = array(
-    'title' => 'База ОКВЭД',
+    'title' => 'ОКВЭД',
     'page callback' => 'razdels_page',
     'access arguments' => array('access okved'),
     'type' => MENU_NORMAL_ITEM,
@@ -44,6 +44,22 @@ function okved_menu() {
     'type' => MENU_CALLBACK,
   );
   
+  $items['okved/userlist'] = array(
+    'title' => 'Результаты поиска',
+    'page callback' => 'okveds_userlist',
+ //   'page arguments' => 'user',
+    'access arguments' => array('access okved'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $items['okved/defaultlist/%'] = array(
+    'title' => 'Результаты поиска',
+    'page callback' => 'okveds_list',
+    'page arguments' => array(2),
+    'access arguments' => array('access okved'),
+    'type' => MENU_CALLBACK,
+  );
+
   return $items;
 }
 
@@ -57,7 +73,16 @@ function okveds_search($filter) {
 
 return okveds_search_print($filter);
 }
+function okveds_userlist() {
+  // Make sure you don't trust the URL to be safe! Always check for exploits.
 
+return okveds_userlist_print();
+}
+function okveds_list($listid) {
+  // Make sure you don't trust the URL to be safe! Always check for exploits.
+
+return okveds_list_print($listid);
+}
 function okveds_page($first) {
   // Make sure you don't trust the URL to be safe! Always check for exploits.
   if (!is_numeric($first)) {
@@ -73,7 +98,7 @@ return okveds_print($first);
  * Implementation of hook_block().
  */
 function okved_block($op = 'list', $delta = 0) {
-  if ($op == 'list') {
+ /* if ($op == 'list') {
     $blocks[0]['info'] = t('ОКВЭд блок');
     return $blocks;
   }
@@ -86,7 +111,7 @@ function okved_block($op = 'list', $delta = 0) {
 
       return $block;
     }
-  }
+  }*/
 }
 
 function razdels_page() {

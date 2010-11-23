@@ -1,16 +1,54 @@
 <?php
 
-$db = new SQLite3('/srv/www/htdocs/sites/all/modules/okved/qokved.db', 0666, $error);
-$version = 1;
+function get_version() {
+	$version = $_COOKIE["okved_version"];
+	if ($version == null) $version = 1;
+	return $version;
+}
+function get_db() {
+    static $dbobj;
+
+    if (!isset($dbobj)) {
+        // Assign a reference to the static variable
+        $dbobj = new SQLite3(drupal_get_path('module', 'okved') . '/qokved.db', 0666, $error);
+    }
+    return $dbobj;
+}
+
+function form_checkedlist_submit($form, &$form_state) {
+  if ($form_state['values']['selector'] == 0) {
+	$form_state['redirect'] = 'okved/userlist/'; 
+  } else {
+	$form_state['redirect'] = 'okved/defaultlist/' . $form_state['values']['selector'];
+  }
+}
+
+function form_checkedlist($form_state, $def_value = 0) {
+  $checklist = def_list_array();
+  $form['selector'] = array(
+    '#type' => 'select',
+    '#title' => t('Список'),
+    '#options' => $checklist,
+    '#default_value' => $def_value,
+  );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => 'Показать список',
+  );
+
+  return $form;
+}
 
 function form_filter_submit($form, &$form_state) {
+  
   $form_state['redirect'] = 'okved/search/' . $form_state['values']['filter'];
 }
 
-function form_filter($form_state) {
+function form_filter($form_state, $search_value = "") {
   $form['filter'] = array(
     '#type' => 'textfield',
     '#title' => t('Поиск'),
+    '#default_value' => $search_value,
     '#required' => TRUE,
     '#size' => 40,
     '#maxlength' => 40,
@@ -19,13 +57,66 @@ function form_filter($form_state) {
     '#type' => 'submit',
     '#value' => 'Найти',
   );
+
   return $form;
+}
+
+function def_list_array()
+{
+$db = get_db();
+$version = get_version();
+
+$ret = Array();
+$q = $db->query('SELECT * FROM global_lists WHERE vid = '.'4');
+
+while ( ($row = $q->fetchArray()))
+{
+	$ret[$row['sid']] = $row['name'];
+}
+
+$ret[0] = 'Пользовательский';
+
+return $ret;
+}
+
+function version_combobox() {
+$db = get_db();
+$version = get_version();
+
+$vers_list = Array();
+
+$q = $db->query('SELECT * FROM versions');
+ 
+while ( ($row = $q->fetchArray()))
+{
+	$vers_list[$row['id']] = $row['name'];
+}
+drupal_add_js('
+$(document).ready(function(){
+
+	$("#version_combo").change(function() {
+		document.cookie = "okved_version=" + $(this).val();
+		window.location.reload();
+	});
+
+});', 'inline');
+
+
+  $form['version_combo'] = array(
+    '#type' => 'select',
+    '#title' => t('Версия закона'),
+    '#options' => $vers_list,
+    '#value' => $version,
+    '#id' => 'version_combo',
+  );
+
+return drupal_render($form);
 }
 
 function razdels_print()
 {
-$db = new SQLite3('/srv/www/htdocs/sites/all/modules/okved/qokved.db', 0666, $error);
-$version = 1;
+$db = get_db();
+$version = get_version();
 
 $q = $db->query('SELECT * FROM razdelz_'.$version);
   	
@@ -37,22 +128,16 @@ $q = $db->query('SELECT * FROM razdelz_'.$version);
 		$rows[] = array(l($row['name'], $razdel_link));
 	}
 //+ theme('table', $headers, $rows, $table_attributes)
-return drupal_get_form('form_filter') . theme('table', $headers, $rows, $table_attributes) ;	
+return version_combobox() . drupal_get_form('form_filter') . drupal_get_form('form_checkedlist') . theme('table', $headers, $rows, $table_attributes) ;	
 
 }
 
 function okveds_from_query($q, $search = "")
 {
-	drupal_add_js('$(document).ready(function(){
- 
-    $("#okveds_list .block").hover(function(){
-		$(this).find("p").slideToggle("fast");
-     }, function() {
-		$(this).find("p").slideToggle("fast");
-	 });});', 'inline');
+	drupal_add_js(drupal_get_path('module', 'okved') . '/okved.js');
 	
 	$table_attributes = array('id' => 'okveds_list');
-	$headers = array('Номер', 'Наименование / Дополнительное описание при наведении');
+	$headers = array('Галко', 'Номер', 'Наименование / Дополнительное описание при наведении');
 	while ( ($row = $q->fetchArray()))
 	{
 		if ($search != "" && !stripos($row['name'], $search)){
@@ -62,12 +147,12 @@ function okveds_from_query($q, $search = "")
 		
 		if ($row['addition'] != "") 
 		{
-			$rows[] = array('class' => 'block',
-							'data' => array(array('data' => $row['number'], 'valign' => 'top'), 
-							$row['name'].sprintf('<p style="display: none;">%s</p>', $row['addition'])));
+			$rows[] = array('class' => 'block', 'data' => array(array('data' => sprintf( '<input type="checkbox" class="okved_check" name="okved_check" value="%s">', $row['oid']), 'valign' => 'top') ,array('data' => $row['number'], 'valign' => 'top'), 
+							$row['name'].sprintf('<p style="display: none;">%s</p>', nl2br($row['addition']))));
 		} else {
 			
-			$rows[] = array(array('data' => $row['number'], 'valign' => 'top'), 
+			$rows[] = array(array('data' =>  sprintf( '<input type="checkbox" class="okved_check" name="okved_check" value="%s">', $row['oid']), 'valign' => 'top'),
+							array('data' => $row['number'], 'valign' => 'top'), 
 							$row['name']);
 		}
 	}
@@ -75,22 +160,71 @@ function okveds_from_query($q, $search = "")
 return(theme('table', $headers, $rows, $table_attributes));
 }
 
-function okveds_search_print($search)
+function okveds_search_print($search, $checked_only = false)
 {
-$db = new SQLite3('/srv/www/htdocs/sites/all/modules/okved/qokved.db', 0666, $error);
-$version = 1;
+$db = get_db();
+$version = get_version();
 
-$return="";	
+$filter="";
+if($checked_only == true)
+{
+	$checked_list = split ( ",", $_COOKIE["ckecked_okveds"] );
+}	
 
 $q = $db->query('SELECT * FROM okveds_'.$version);
   
-return drupal_get_form('form_filter') . okveds_from_query($q, $search);
+return drupal_get_form('form_filter', $search) .  drupal_get_form('form_checkedlist') . okveds_from_query($q, $search);
+}
+
+function okveds_list_print($listid)
+{
+$db = get_db();
+$version = get_version();
+
+$q = $db->query('SELECT * FROM global_lists WHERE sid=' . $listid . ' LIMIT 1');
+$row = $q->fetchArray();
+
+$filter="";
+$checked_list = split ( ",", $row['checks'] );
+
+foreach ($checked_list as $checkid) {
+	if ($filter == '') {
+		$filter .= " WHERE ";
+	} else $filter .= " OR ";
+
+	$filter .= 'oid=' . $checkid;
+}
+$q = $db->query('SELECT * FROM okveds_'.$version . $filter);
+  
+return drupal_get_form('form_filter') . drupal_get_form('form_checkedlist', $listid) . okveds_from_query($q);
+}
+
+function okveds_userlist_print()
+{
+$db = get_db();
+$version = get_version();
+
+$filter="";
+$checked_list = split ( ",", $_COOKIE["ckecked_okveds"] );
+if (count ($checked_list) < 1 ) drupal_set_message('Ни одна позиция не была выбрана', 'error');
+
+foreach ($checked_list as $checkid) {
+	if ($filter == '') {
+		$filter .= " WHERE ";
+	} else $filter .= " OR ";
+
+	$filter .= 'oid=' . $checkid;
+}	
+
+$q = $db->query('SELECT * FROM okveds_'.$version . $filter);
+  
+return drupal_get_form('form_filter') . drupal_get_form('form_checkedlist') . okveds_from_query($q);
 }
 
 function okveds_print($rasdel)
 {
-$db = new SQLite3('/srv/www/htdocs/sites/all/modules/okved/qokved.db', 0666, $error);
-$version = 1;
+$db = get_db();
+$version = get_version();
 
 $return="";	
 $filter="";
@@ -112,8 +246,8 @@ return drupal_get_form('form_filter') . okveds_from_query($q);
 
 function rasdel_name($rasdel)
 {
-$db = new SQLite3('/srv/www/htdocs/sites/all/modules/okved/qokved.db', 0666, $error);
-$version = 1;
+$db = get_db();
+$version = get_version();
 
 $q = $db->query('SELECT * FROM razdelz_'.$version . ' WHERE rid='.$rasdel . ' LIMIT 1');
 $row = $q->fetchArray();
