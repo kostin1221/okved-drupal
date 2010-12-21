@@ -67,7 +67,7 @@ $db = get_db();
 $version = get_version();
 
 $ret = Array();
-$q = $db->query('SELECT * FROM global_lists WHERE vid = '.'4');
+$q = $db->query('SELECT * FROM global_lists WHERE vid = '.$version);
 
 while ( ($row = $q->fetchArray()))
 {
@@ -173,7 +173,7 @@ if($checked_only == true)
 
 $q = $db->query('SELECT * FROM okveds_'.$version);
   
-return drupal_get_form('form_filter', $search) .  drupal_get_form('form_checkedlist') . okveds_from_query($q, $search);
+return version_combobox() . drupal_get_form('form_filter', $search) . drupal_get_form('form_checkedlist') . okveds_from_query($q, $search);
 }
 
 function okveds_list_print($listid)
@@ -196,7 +196,53 @@ foreach ($checked_list as $checkid) {
 }
 $q = $db->query('SELECT * FROM okveds_'.$version . $filter);
   
-return drupal_get_form('form_filter') . drupal_get_form('form_checkedlist', $listid) . okveds_from_query($q);
+return version_combobox() . drupal_get_form('form_filter') . drupal_get_form('form_checkedlist', $listid) . okveds_from_query($q);
+}
+
+function print_page_link()
+{
+drupal_add_js( "function printpage(){
+
+$.fn.removeCol = function(col){
+    // Make sure col has value
+    if(!col){ col = 1; }
+    $('tr td:nth-child('+col+'), tr th:nth-child('+col+')', this).remove();
+    return this;
+};
+
+document.getElementById('printlink').onclick=function(){
+
+table = content+=$('#okveds_list').html();
+
+content='<table border=\"1\" cellspacing=\"1\">';
+
+content+='<thead class=\"tableHeader-processed\"><tr><th>Номер</th><th>Наименование</tr></thead>';
+content+='<tbody>';
+
+oldtable=$('#okveds_list').html();
+
+
+$(oldtable).find('tr').each(function(n, elem) {
+	if ($(elem).find('td').eq(1).html() != null){
+		content+='<tr>';
+		content+='<td>' + $(elem).find('td').eq(1).html() + '</td>';
+		info=$(elem).find('td').eq(2).html();
+		$(info).find(\"p\").remove();
+		content+='<td>' + info + '</td>';
+	};
+});
+
+content+='</table>';
+w=window.open('about:blank');
+w.document.open();
+w.document.write( content );
+w.document.close();
+
+
+return false;
+		}}", 'inline');
+
+return '<a href="#" rel="nofollow" id=printlink onClick="printpage()">Страница для печати</a>';
 }
 
 function okveds_userlist_print()
@@ -218,7 +264,7 @@ foreach ($checked_list as $checkid) {
 
 $q = $db->query('SELECT * FROM okveds_'.$version . $filter);
   
-return drupal_get_form('form_filter') . drupal_get_form('form_checkedlist') . okveds_from_query($q);
+return version_combobox() . drupal_get_form('form_filter') . drupal_get_form('form_checkedlist') . okveds_from_query($q);
 }
 
 function okveds_print($rasdel)
@@ -241,7 +287,7 @@ if ($rasdel==1) {		//Если это "Все разделы"
 }
 $q = $db->query('SELECT * FROM okveds_'.$version . $filter);
   
-return drupal_get_form('form_filter') . okveds_from_query($q);
+return version_combobox() . drupal_get_form('form_filter') . drupal_get_form('form_checkedlist') . print_page_link() . okveds_from_query($q);
 }
 
 function rasdel_name($rasdel)
