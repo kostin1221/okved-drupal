@@ -71,6 +71,7 @@ $q = $db->query('SELECT * FROM global_lists WHERE vid = '.$version);
 
 while ( ($row = $q->fetchArray()))
 {
+
 	$ret[$row['sid']] = $row['name'];
 }
 
@@ -125,7 +126,11 @@ $q = $db->query('SELECT * FROM razdelz_'.$version);
 	while ( ($row = $q->fetchArray()))
 	{
 		$razdel_link = url('okved/rasdel/'.$row['rid'], array('absolute' => TRUE));
-		$rows[] = array(l($row['name'], $razdel_link));
+		$attributes = array();
+		$search="Подраздел";
+		if ( strncasecmp($row['name'], $search, strlen($search)) == 0 )
+		  $attributes = array('attributes' => array('style' => "margin-left: 20px;"));
+		$rows[] = array( l($row['name'], $razdel_link, $attributes));
 	}
 //+ theme('table', $headers, $rows, $table_attributes)
 return version_combobox() . drupal_get_form('form_filter') . drupal_get_form('form_checkedlist') . theme('table', $headers, $rows, $table_attributes) ;	
@@ -137,7 +142,7 @@ function okveds_from_query($q, $search = "")
 	drupal_add_js(drupal_get_path('module', 'okved') . '/okved.js');
 	
 	$table_attributes = array('id' => 'okveds_list');
-	$headers = array('Галко', 'Номер', 'Наименование / Дополнительное описание при наведении');
+	$headers = array('', 'Номер', 'Наименование / Дополнительное описание при наведении');
 	while ( ($row = $q->fetchArray()))
 	{
 		if ($search != "" && !stripos($row['name'], $search)){
@@ -168,12 +173,12 @@ $version = get_version();
 $filter="";
 if($checked_only == true)
 {
-	$checked_list = split ( ",", $_COOKIE["ckecked_okveds"] );
+	$checked_list = split ( ",", $_COOKIE["checked_okveds"] );
 }	
 
 $q = $db->query('SELECT * FROM okveds_'.$version);
   
-return version_combobox() . drupal_get_form('form_filter', $search) . drupal_get_form('form_checkedlist') . okveds_from_query($q, $search);
+return version_combobox() . drupal_get_form('form_filter', $search) . drupal_get_form('form_checkedlist') . print_page_link() . okveds_from_query($q, $search);
 }
 
 function okveds_list_print($listid)
@@ -210,8 +215,10 @@ $.fn.removeCol = function(col){
     return this;
 };
 
-document.getElementById('printlink').onclick=function(){
+//document.getElementById('printlink').onclick=function(e){
+alert('123');
 
+$('#printlink').click(function(e) {
 table = content+=$('#okveds_list').html();
 
 content='<table border=\"1\" cellspacing=\"1\">';
@@ -238,11 +245,12 @@ w.document.open();
 w.document.write( content );
 w.document.close();
 
+e.preventDefault();
+//return false;
+		});}", 'inline');
 
-return false;
-		}}", 'inline');
-
-return '<a href="#" rel="nofollow" id=printlink onClick="printpage()">Страница для печати</a>';
+//return '<a href="#" rel="nofollow" id=printlink">Страница для печати</a>';
+return '<a href="#" rel="nofollow" id=printlink onClick="printpage(); return false;">Страница для печати</a>';
 }
 
 function okveds_userlist_print()
@@ -251,20 +259,28 @@ $db = get_db();
 $version = get_version();
 
 $filter="";
-$checked_list = split ( ",", $_COOKIE["ckecked_okveds"] );
-if (count ($checked_list) < 1 ) drupal_set_message('Ни одна позиция не была выбрана', 'error');
+$checked_list = split ( ",", $_COOKIE["checked_okveds"] );
+//printf($_COOKIE["checked_okveds"]);
+
+//if ( $_COOKIE["checked_okveds"]) == "") drupal_set_message('Ни одна позиция не была выбрана', 'error');
 
 foreach ($checked_list as $checkid) {
+  if ($checkid != "") {
+	$have_check=true;
 	if ($filter == '') {
-		$filter .= " WHERE ";
+		$filter .= "WHERE ";
 	} else $filter .= " OR ";
 
 	$filter .= 'oid=' . $checkid;
+  }
 }	
 
-$q = $db->query('SELECT * FROM okveds_'.$version . $filter);
-  
-return version_combobox() . drupal_get_form('form_filter') . drupal_get_form('form_checkedlist') . okveds_from_query($q);
+if ($have_check) {
+  $q = $db->query('SELECT * FROM okveds_' . $version . ' ' . $filter);  
+  return version_combobox() . drupal_get_form('form_filter') . drupal_get_form('form_checkedlist') . print_page_link() . okveds_from_query($q);
+} else {
+  return "Ни одна позиция не была выбрана";
+}
 }
 
 function okveds_print($rasdel)

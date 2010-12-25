@@ -20,8 +20,10 @@ $(document).ready(function(){
 		return(setStr);
 	};
 	
-	old_cookie = getCookie("ckecked_okveds");
-	arr = old_cookie.split(",");
+	old_cookie = getCookie("checked_okveds");
+	if(old_cookie) {
+	  arr = old_cookie.split(",");
+	} else { arr = new Array(); }
 	$("#okveds_list .okved_check").each(
 		function() {
 			if(arr.indexOf($(this).val()) > -1){
@@ -30,8 +32,10 @@ $(document).ready(function(){
 		});
 	
 	$("#okveds_list .okved_check").change(function() {
-		old_cookie = getCookie("ckecked_okveds");
-		arr = old_cookie.split(",");
+		old_cookie = getCookie("checked_okveds");
+		if(old_cookie) {
+		  arr = old_cookie.split(",");
+		} else { arr = new Array(); }
 		if ($(this).attr("checked") == true){
 			if(arr.indexOf($(this).val()) == -1){
 				arr.push($(this).val());
@@ -43,7 +47,7 @@ $(document).ready(function(){
 		};
 		var new_cookie = arr.join();
 
-		document.cookie = "ckecked_okveds=" + new_cookie;
+		document.cookie = "checked_okveds=" + new_cookie;
 	});
     $("#okveds_list .block").hover(function(){
 		$(this).find("p").slideToggle("fast");
