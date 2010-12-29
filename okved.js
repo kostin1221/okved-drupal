@@ -51,6 +51,8 @@ $(document).ready(function(){
 	});
     $("#okveds_list .block").hover(function(){
 		$(this).find("p").slideToggle("fast");
+		$(this).toggleClass("active");
      }, function() {
 		$(this).find("p").slideToggle("fast");
+		$(this).removeClass("active");
 	 });});

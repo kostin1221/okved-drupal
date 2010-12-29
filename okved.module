@@ -70,20 +70,21 @@ function _razdel_title_callback($base_string) {
 
 function okveds_search($filter) {
   // Make sure you don't trust the URL to be safe! Always check for exploits.
-
+css_add();
 return okveds_search_print($filter);
 }
 function okveds_userlist() {
   // Make sure you don't trust the URL to be safe! Always check for exploits.
-
+css_add();
 return okveds_userlist_print();
 }
 function okveds_list($listid) {
   // Make sure you don't trust the URL to be safe! Always check for exploits.
-
+css_add();
 return okveds_list_print($listid);
 }
 function okveds_page($first) {
+css_add();
   // Make sure you don't trust the URL to be safe! Always check for exploits.
   if (!is_numeric($first)) {
     // We will just show a standard "access denied" page in this case.
@@ -98,6 +99,7 @@ return okveds_print($first);
  * Implementation of hook_block().
  */
 function okved_block($op = 'list', $delta = 0) {
+
  /* if ($op == 'list') {
     $blocks[0]['info'] = t('ОКВЭд блок');
     return $blocks;
@@ -115,7 +117,7 @@ function okved_block($op = 'list', $delta = 0) {
 }
 
 function razdels_page() {
-
+css_add();
 return razdels_print();
 }
 

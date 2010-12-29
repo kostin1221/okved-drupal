@@ -1,4 +1,8 @@
 <?php
+function css_add(){
+	drupal_add_css(drupal_get_path('module', 'okved') .'/css/okved.css');
+
+}
 
 function get_version() {
 	$version = $_COOKIE["okved_version"];
@@ -153,7 +157,7 @@ function okveds_from_query($q, $search = "")
 		if ($row['addition'] != "") 
 		{
 			$rows[] = array('class' => 'block', 'data' => array(array('data' => sprintf( '<input type="checkbox" class="okved_check" name="okved_check" value="%s">', $row['oid']), 'valign' => 'top') ,array('data' => $row['number'], 'valign' => 'top'), 
-							$row['name'].sprintf('<p style="display: none;">%s</p>', nl2br($row['addition']))));
+array('class' => 'name', 'data' => $row['name'].'<img class="array_img" >'.sprintf('<p class="addition" style="display: none;">%s</p>', nl2br($row['addition'])))));
 		} else {
 			
 			$rows[] = array(array('data' =>  sprintf( '<input type="checkbox" class="okved_check" name="okved_check" value="%s">', $row['oid']), 'valign' => 'top'),
@@ -215,12 +219,6 @@ $.fn.removeCol = function(col){
     return this;
 };
 
-//document.getElementById('printlink').onclick=function(e){
-alert('123');
-
-$('#printlink').click(function(e) {
-table = content+=$('#okveds_list').html();
-
 content='<table border=\"1\" cellspacing=\"1\">';
 
 content+='<thead class=\"tableHeader-processed\"><tr><th>Номер</th><th>Наименование</tr></thead>';
@@ -245,9 +243,8 @@ w.document.open();
 w.document.write( content );
 w.document.close();
 
-e.preventDefault();
-//return false;
-		});}", 'inline');
+return false;
+	}", 'inline');
 
 //return '<a href="#" rel="nofollow" id=printlink">Страница для печати</a>';
 return '<a href="#" rel="nofollow" id=printlink onClick="printpage(); return false;">Страница для печати</a>';
@@ -265,16 +262,16 @@ $checked_list = split ( ",", $_COOKIE["checked_okveds"] );
 //if ( $_COOKIE["checked_okveds"]) == "") drupal_set_message('Ни одна позиция не была выбрана', 'error');
 
 foreach ($checked_list as $checkid) {
-  if ($checkid != "") {
-	$have_check=true;
-	if ($filter == '') {
-		$filter .= "WHERE ";
-	} else $filter .= " OR ";
-
-	$filter .= 'oid=' . $checkid;
+	if($checkid!='' ||  $checkid !=null){
+		$have_check = true;
+		if ($filter == '') {
+			$filter .= "WHERE ";
+		} else $filter .= " OR ";
+	
+		$filter .= 'oid=' . $checkid;
+	}
   }
-}	
-
+	
 if ($have_check) {
   $q = $db->query('SELECT * FROM okveds_' . $version . ' ' . $filter);  
   return version_combobox() . drupal_get_form('form_filter') . drupal_get_form('form_checkedlist') . print_page_link() . okveds_from_query($q);
