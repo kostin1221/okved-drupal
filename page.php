@@ -157,7 +157,7 @@ function okveds_from_query($q, $search = "")
 		if ($row['addition'] != "") 
 		{
 			$rows[] = array('class' => 'block', 'data' => array(array('data' => sprintf( '<input type="checkbox" class="okved_check" name="okved_check" value="%s">', $row['oid']), 'valign' => 'top') ,array('data' => $row['number'], 'valign' => 'top'), 
-array('class' => 'name', 'data' => $row['name'].'<img class="array_img" >'.sprintf('<p class="addition" style="display: none;">%s</p>', nl2br($row['addition'])))));
+array('class' => 'name', 'data' => $row['name'].'<img src="'.drupal_get_path('module', 'okved').'/images/up_arrow.jpg" align="right">'.sprintf('<p class="addition" style="display: none;">%s</p>', nl2br($row['addition'])))));
 		} else {
 			
 			$rows[] = array(array('data' =>  sprintf( '<input type="checkbox" class="okved_check" name="okved_check" value="%s">', $row['oid']), 'valign' => 'top'),
@@ -177,7 +177,7 @@ $version = get_version();
 $filter="";
 if($checked_only == true)
 {
-	$checked_list = split ( ",", $_COOKIE["checked_okveds"] );
+	$checked_list = split ( ",", $_COOKIE["checked_okveds_" . get_version()] );
 }	
 
 $q = $db->query('SELECT * FROM okveds_'.$version);
@@ -210,41 +210,6 @@ return version_combobox() . drupal_get_form('form_filter') . drupal_get_form('fo
 
 function print_page_link()
 {
-drupal_add_js( "function printpage(){
-
-$.fn.removeCol = function(col){
-    // Make sure col has value
-    if(!col){ col = 1; }
-    $('tr td:nth-child('+col+'), tr th:nth-child('+col+')', this).remove();
-    return this;
-};
-
-content='<table border=\"1\" cellspacing=\"1\">';
-
-content+='<thead class=\"tableHeader-processed\"><tr><th>Номер</th><th>Наименование</tr></thead>';
-content+='<tbody>';
-
-oldtable=$('#okveds_list').html();
-
-
-$(oldtable).find('tr').each(function(n, elem) {
-	if ($(elem).find('td').eq(1).html() != null){
-		content+='<tr>';
-		content+='<td>' + $(elem).find('td').eq(1).html() + '</td>';
-		info=$(elem).find('td').eq(2).html();
-		$(info).find(\"p\").remove();
-		content+='<td>' + info + '</td>';
-	};
-});
-
-content+='</table>';
-w=window.open('about:blank');
-w.document.open();
-w.document.write( content );
-w.document.close();
-
-return false;
-	}", 'inline');
 
 //return '<a href="#" rel="nofollow" id=printlink">Страница для печати</a>';
 return '<a href="#" rel="nofollow" id=printlink onClick="printpage(); return false;">Страница для печати</a>';
