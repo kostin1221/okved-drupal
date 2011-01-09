@@ -65,6 +65,17 @@ function form_filter($form_state, $search_value = "") {
   return $form;
 }
 
+function okved_settings_print(){
+  $form['okved_statictext_mainpage'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Текст на главной странице модуля'),
+    '#default_value' => variable_get('okved_statictext_mainpage', ''),
+    '#rows' => 5
+  );
+  
+  return system_settings_form($form);
+}
+
 function def_list_array()
 {
 $db = get_db();
@@ -118,6 +129,35 @@ $(document).ready(function(){
 return drupal_render($form);
 }
 
+function head_print($search = '', $checklist_id = -1) {
+  if (module_exists('quicktabs')){
+    $tabs['search'] = array(
+      'title' => t('Поиск по номеру/наименованию'),
+      'type' => 'freetext',
+      'text' => drupal_get_form('form_filter', $search),
+    );
+    $tabs['checkedlist'] = array(
+      'title' => t('Предопределенный/пользовательский список'),
+      'type' => 'freetext',
+      'text' => drupal_get_form('form_checkedlist',$checklist_id),
+    );
+
+    if ($search != '') {
+      $quicktabs['default_tab'] = 'search';
+    } else if ($checklist_id == -1 ) {
+      $checklist_id == 0;
+      $quicktabs['default_tab'] = 'checkedlist';
+    }
+    
+    $quicktabs['qtid'] = 'okvedhead';
+    $quicktabs['tabs'] = $tabs;
+    $quicktabs['style'] = 'Zen';
+    $quicktabs['ajax'] = TRUE;
+    return version_combobox() . theme('quicktabs', $quicktabs);
+  } else 
+    return version_combobox() . drupal_get_form('form_filter', $search) . drupal_get_form('form_checkedlist',$checklist_id);
+}
+
 function razdels_print()
 {
 $db = get_db();
@@ -137,7 +177,7 @@ $q = $db->query('SELECT * FROM razdelz_'.$version);
 		$rows[] = array( l($row['name'], $razdel_link, $attributes));
 	}
 //+ theme('table', $headers, $rows, $table_attributes)
-return version_combobox() . drupal_get_form('form_filter') . drupal_get_form('form_checkedlist') . theme('table', $headers, $rows, $table_attributes) ;	
+return head_print() . '<div id=mainpage_text><h3>' . variable_get('okved_statictext_mainpage', '') . '</h3></div>' . theme('table', $headers, $rows, $table_attributes) ;	
 
 }
 
@@ -146,10 +186,10 @@ function okveds_from_query($q, $search = "")
 	drupal_add_js(drupal_get_path('module', 'okved') . '/okved.js');
 	
 	$table_attributes = array('id' => 'okveds_list');
-	$headers = array('', 'Номер', 'Наименование / Дополнительное описание при наведении');
+	$headers = array('<input type="checkbox" class="okved_allcheck" name="okved_allcheck">', 'Номер', 'Наименование / Дополнительное описание при наведении');
 	while ( ($row = $q->fetchArray()))
 	{
-		if ($search != "" && !stripos($row['name'], $search)){
+		if ($search != "" && stripos($row['name'], $search) === false && stripos($row['name'], $search)  != 0 ){
 
 			 continue;
 		 }
@@ -157,10 +197,10 @@ function okveds_from_query($q, $search = "")
 		if ($row['addition'] != "") 
 		{
 			$rows[] = array('class' => 'block', 'data' => array(array('data' => sprintf( '<input type="checkbox" class="okved_check" name="okved_check" value="%s">', $row['oid']), 'valign' => 'top') ,array('data' => $row['number'], 'valign' => 'top'), 
-array('class' => 'name', 'data' => $row['name'].'<img src="'.drupal_get_path('module', 'okved').'/images/up_arrow.jpg" align="right">'.sprintf('<p class="addition" style="display: none;">%s</p>', nl2br($row['addition'])))));
+array('class' => 'name', 'valign' => 'top', 'data' => $row['name'].'<img src="'.drupal_get_path('module', 'okved').'/images/up_arrow.jpg" align="right">'.sprintf('<p class="addition" style="display: none;">%s</p>', nl2br($row['addition'])))));
 		} else {
 			
-			$rows[] = array(array('data' =>  sprintf( '<input type="checkbox" class="okved_check" name="okved_check" value="%s">', $row['oid']), 'valign' => 'top'),
+			$rows[] = array(array('data' => sprintf( '<input type="checkbox" class="okved_check" name="okved_check" value="%s">', $row['oid']), 'valign' => 'top'),
 							array('data' => $row['number'], 'valign' => 'top'), 
 							$row['name']);
 		}
@@ -177,12 +217,12 @@ $version = get_version();
 $filter="";
 if($checked_only == true)
 {
-	$checked_list = split ( ",", $_COOKIE["checked_okveds_" . get_version()] );
+	$checked_list = split ( ",", $_COOKIE["checked_okveds_" . $version] );
 }	
 
 $q = $db->query('SELECT * FROM okveds_'.$version);
   
-return version_combobox() . drupal_get_form('form_filter', $search) . drupal_get_form('form_checkedlist') . print_page_link() . okveds_from_query($q, $search);
+return head_print($search) . print_page_link() . okveds_from_query($q, $search);
 }
 
 function okveds_list_print($listid)
@@ -205,7 +245,7 @@ foreach ($checked_list as $checkid) {
 }
 $q = $db->query('SELECT * FROM okveds_'.$version . $filter);
   
-return version_combobox() . drupal_get_form('form_filter') . drupal_get_form('form_checkedlist', $listid) . okveds_from_query($q);
+return head_print('', $listid) . okveds_from_query($q);
 }
 
 function print_page_link()
@@ -221,7 +261,7 @@ $db = get_db();
 $version = get_version();
 
 $filter="";
-$checked_list = split ( ",", $_COOKIE["checked_okveds"] );
+$checked_list = split ( ",", $_COOKIE["checked_okveds_" . $version] );
 //printf($_COOKIE["checked_okveds"]);
 
 //if ( $_COOKIE["checked_okveds"]) == "") drupal_set_message('Ни одна позиция не была выбрана', 'error');
@@ -239,7 +279,7 @@ foreach ($checked_list as $checkid) {
 	
 if ($have_check) {
   $q = $db->query('SELECT * FROM okveds_' . $version . ' ' . $filter);  
-  return version_combobox() . drupal_get_form('form_filter') . drupal_get_form('form_checkedlist') . print_page_link() . okveds_from_query($q);
+  return head_print('', 0) . print_page_link() . okveds_from_query($q);
 } else {
   return "Ни одна позиция не была выбрана";
 }
@@ -265,7 +305,7 @@ if ($rasdel==1) {		//Если это "Все разделы"
 }
 $q = $db->query('SELECT * FROM okveds_'.$version . $filter);
   
-return version_combobox() . drupal_get_form('form_filter') . drupal_get_form('form_checkedlist') . print_page_link() . okveds_from_query($q);
+return head_print() . print_page_link() . okveds_from_query($q);
 }
 
 function rasdel_name($rasdel)

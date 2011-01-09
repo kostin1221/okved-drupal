@@ -47,7 +47,6 @@ function okved_menu() {
   $items['okved/userlist'] = array(
     'title' => 'Результаты поиска',
     'page callback' => 'okveds_userlist',
- //   'page arguments' => 'user',
     'access arguments' => array('access okved'),
     'type' => MENU_CALLBACK,
   );
@@ -60,7 +59,22 @@ function okved_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $items['admin/settings/okved'] = array(
+    'title' => 'ОКВЭД',
+    'description' => 'Настройки модуля ОКВЭД',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('okved_settings'),
+   // 'access callback' => 'user_access',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM
+  );
+    
   return $items;
+}
+
+function okved_settings() {
+  
+  return okved_settings_print();
 }
 
 function _razdel_title_callback($base_string) {
