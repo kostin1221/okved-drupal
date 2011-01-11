@@ -129,12 +129,38 @@ $(document).ready(function(){
 return drupal_render($form);
 }
 
+function magic_tabs_okved_callback($active = 0) {
+  $tabs[] = array(
+    'title' => 'Глобальный поиск',
+    'content' => t('Content of поиск'),
+  );
+  $tabs[] = array(
+    'title' => 'поиск по разделу',
+    'content' => t('Content of поиск'),
+  );
+
+  $tabs[] = array(
+    'title' => 'Пользовательский список',
+    'content' => okveds_userlist_print(),
+  );
+  $tabs[] = array(
+    'title' => t('Раздел'),
+    'content' => t('Content of third magic tab'),
+  );
+  return $tabs;
+}
+
 function head_print($search = '', $checklist_id = -1) {
-  if (module_exists('quicktabs')){
-    $tabs['search'] = array(
+  if (module_exists('magic_tabs')){
+	return magic_tabs_get('magic_tabs_okved_callback', 'first');
+/*    $tabs['search'] = array(
       'title' => t('Поиск по номеру/наименованию'),
-      'type' => 'freetext',
-      'text' => drupal_get_form('form_filter', $search),
+      'type' => 'node',
+      'nid' => 'fullsearch',
+      'text' => drupal_get_form('form_filter', $search)//,
+   //   $settings = array(
+   //   'views' => array(
+ //       'ajax_path' => url('views/ajax/fullsearch')))
     );
     $tabs['checkedlist'] = array(
       'title' => t('Предопределенный/пользовательский список'),
@@ -154,7 +180,9 @@ function head_print($search = '', $checklist_id = -1) {
     $quicktabs['style'] = 'Zen';
     $quicktabs['ajax'] = TRUE;
     return version_combobox() . theme('quicktabs', $quicktabs);
-  } else 
+  */
+    
+    } else 
     return version_combobox() . drupal_get_form('form_filter', $search) . drupal_get_form('form_checkedlist',$checklist_id);
 }
 

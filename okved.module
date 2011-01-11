@@ -50,7 +50,14 @@ function okved_menu() {
     'access arguments' => array('access okved'),
     'type' => MENU_CALLBACK,
   );
-
+  
+  $items['quicktabs/ajax/node/fullsearch'] = array(
+    'page callback' => 'okved_ajax_fullsearch',
+    'access callback' => 'user_access',
+    'access arguments' => array('access okved'),
+    'type' => MENU_CALLBACK,
+  );
+  
   $items['okved/defaultlist/%'] = array(
     'title' => 'Результаты поиска',
     'page callback' => 'okveds_list',
@@ -68,7 +75,7 @@ function okved_menu() {
     'access arguments' => array('administer site configuration'),
     'type' => MENU_NORMAL_ITEM
   );
-    
+   
   return $items;
 }
 
@@ -80,6 +87,10 @@ function okved_settings() {
 function _razdel_title_callback($base_string) {
 
   return rasdel_name($base_string);
+}
+
+function okved_ajax_fullsearch() {
+  return '123';
 }
 
 function okveds_search($filter) {
