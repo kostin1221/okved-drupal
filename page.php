@@ -1,12 +1,14 @@
 <?php
+$rid=0;
+
 function css_add(){
 	drupal_add_css(drupal_get_path('module', 'okved') .'/css/okved.css');
-
 }
 
 function get_version() {
 	$version = $_COOKIE["okved_version"];
-	if ($version == null) $version = 1;
+	if ($version == null || !is_numeric($version)) $version = 1;	//если кукиз не определен, или в кукиз написали что-то кроме чисел, возвращает 1 раздел
+	
 	return $version;
 }
 function get_db() {
@@ -19,48 +21,70 @@ function get_db() {
     return $dbobj;
 }
 
-function form_checkedlist_submit($form, &$form_state) {
-  if ($form_state['values']['selector'] == 0) {
-	$form_state['redirect'] = 'okved/userlist/'; 
-  } else {
-	$form_state['redirect'] = 'okved/defaultlist/' . $form_state['values']['selector'];
-  }
-}
-
-function form_checkedlist($form_state, $def_value = 0) {
+function form_checkedlist($form_state) {
   $checklist = def_list_array();
-  $form['selector'] = array(
+  $form['container'] = array(
+     '#prefix' => '<div class="container-inline">',
+     '#suffix' => '</div>',
+  );
+
+  $form['container']['selector'] = array(
     '#type' => 'select',
     '#title' => t('Список'),
     '#options' => $checklist,
-    '#default_value' => $def_value,
   );
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => 'Показать список',
-  );
+  
+$form['container']['checklistbtn'] = array(
+    '#type' => 'button',
+    '#value' => 'Показать',
+    '#attributes' => array('onclick' => "ajax_checklists(this.form.getAttribute('action'), this.form.selector.value); return false;"),
+);
+
+
+$form['#action'] = url("documents/okved/ajaxchecklist");
 
   return $form;
 }
 
-function form_filter_submit($form, &$form_state) {
-  
-  $form_state['redirect'] = 'okved/search/' . $form_state['values']['filter'];
-}
+function form_search($form_state, $globalsearch = false) {
+// контейнер для полей
+$form['container'] = array(
+     '#prefix' => '<div class="container-inline">',
+     '#suffix' => '</div>',
+);
 
-function form_filter($form_state, $search_value = "") {
-  $form['filter'] = array(
+$form['container']['search_string'] = array(
     '#type' => 'textfield',
-    '#title' => t('Поиск'),
-    '#default_value' => $search_value,
-    '#required' => TRUE,
+    '#title' => t('Строка поиска'),
+    '#default_value' => "",
     '#size' => 40,
     '#maxlength' => 40,
-  );
-  $form['submit'] = array(
-    '#type' => 'submit',
+);
+$form['container']['clear'] = array(
+    '#name' => 'clear',
+    '#type' => 'button',
+    '#value' => t('Reset'),
+    '#attributes' => array('onclick' => 'this.form.reset(); return false;'),
+);    
+    
+$qarr= explode('/', $_GET['q']);
+  if ($qarr[2] == 'rasdel' && !$globalsearch){
+    $attrib_btn = array('onclick' => "ajax_search(this.form.getAttribute('action'), this.form.search_string.value, " . $qarr[3] . "); return false;");
+  }
+  else {
+    $attrib_btn = array('onclick' => "ajax_search(this.form.getAttribute('action'), this.form.search_string.value); return false;");    
+  }
+  
+$form['container']['searchbtn'] = array(
+    '#name' => 'searchbtn',
+    '#type' => 'button',
     '#value' => 'Найти',
-  );
+    '#attributes' => $attrib_btn,
+);
+
+
+$form['#action'] = url("documents/okved/ajaxsearch");
+//$form['#attributes'] = array( 'onsubmit' => "ajax_search(this.form.getAttribute('action'), this.form.search_string.value); return false; ");
 
   return $form;
 }
@@ -90,8 +114,6 @@ while ( ($row = $q->fetchArray()))
 	$ret[$row['sid']] = $row['name'];
 }
 
-$ret[0] = 'Пользовательский';
-
 return $ret;
 }
 
@@ -111,7 +133,7 @@ drupal_add_js('
 $(document).ready(function(){
 
 	$("#version_combo").change(function() {
-		document.cookie = "okved_version=" + $(this).val();
+		document.cookie = "okved_version=" + $(this).val() + "; path=/";
 		window.location.reload();
 	});
 
@@ -130,60 +152,47 @@ return drupal_render($form);
 }
 
 function magic_tabs_okved_callback($active = 0) {
-  $tabs[] = array(
-    'title' => 'Глобальный поиск',
-    'content' => t('Content of поиск'),
-  );
-  $tabs[] = array(
-    'title' => 'поиск по разделу',
-    'content' => t('Content of поиск'),
-  );
 
   $tabs[] = array(
-    'title' => 'Пользовательский список',
-    'content' => okveds_userlist_print(),
+    'title' => t('Разделы'),
+    'content' => razdels_print().'<script type="text/javascript">register_events(); </script>',
   );
   $tabs[] = array(
-    'title' => t('Раздел'),
-    'content' => t('Content of third magic tab'),
+    'title' => 'Глобальный поиск',
+    'content' => drupal_get_form('form_search', true) . '<div id=search_container>Введите поисковой запрос</div>',
+  );
+  
+$qarr= explode('/', $_GET['q']);
+if ($qarr [2] == 'rasdel')
+  $tabs[] = array(
+    'title' => 'Поиск по разделу',
+    'content' => drupal_get_form('form_search', false) . '<div id=search_container>Введите поисковой запрос</div>',
+  );
+/*  $tabs[] = array(
+    'title' => 'Содержимое раздела',
+    'content' => okveds_print(2).'<script type="text/javascript">register_events();</script>',
+  );
+*/
+  $tabs[] = array(
+    'title' => 'Пользовательский список',
+    'content' => okveds_userlist_print().'<script type="text/javascript">register_events(); </script>',
+  );
+  $tabs[] = array(
+    'title' => 'Предопределенный список',
+    'content' => drupal_get_form('form_checkedlist').'<div id=checklist_container>Выбирите список</div>',
   );
   return $tabs;
+  
 }
 
 function head_print($search = '', $checklist_id = -1) {
-  if (module_exists('magic_tabs')){
-	return magic_tabs_get('magic_tabs_okved_callback', 'first');
-/*    $tabs['search'] = array(
-      'title' => t('Поиск по номеру/наименованию'),
-      'type' => 'node',
-      'nid' => 'fullsearch',
-      'text' => drupal_get_form('form_filter', $search)//,
-   //   $settings = array(
-   //   'views' => array(
- //       'ajax_path' => url('views/ajax/fullsearch')))
-    );
-    $tabs['checkedlist'] = array(
-      'title' => t('Предопределенный/пользовательский список'),
-      'type' => 'freetext',
-      'text' => drupal_get_form('form_checkedlist',$checklist_id),
-    );
 
-    if ($search != '') {
-      $quicktabs['default_tab'] = 'search';
-    } else if ($checklist_id == -1 ) {
-      $checklist_id == 0;
-      $quicktabs['default_tab'] = 'checkedlist';
-    }
-    
-    $quicktabs['qtid'] = 'okvedhead';
-    $quicktabs['tabs'] = $tabs;
-    $quicktabs['style'] = 'Zen';
-    $quicktabs['ajax'] = TRUE;
-    return version_combobox() . theme('quicktabs', $quicktabs);
-  */
-    
-    } else 
-    return version_combobox() . drupal_get_form('form_filter', $search) . drupal_get_form('form_checkedlist',$checklist_id);
+drupal_add_js(drupal_get_path('module', 'okved') . '/okved.js');
+  if (module_exists('magic_tabs')){
+ 
+    unset($_SESSION['magic_tabs']);		//Иначе откроет последнюю открытую вкладку
+    return version_combobox() . magic_tabs_get('magic_tabs_okved_callback', 0);
+  }
 }
 
 function razdels_print()
@@ -191,13 +200,18 @@ function razdels_print()
 $db = get_db();
 $version = get_version();
 
+$qarr= explode('/', $_GET['q']);
+if ($qarr [2] == rasdel)
+  return okveds_print($qarr [3]);
+
+
 $q = $db->query('SELECT * FROM razdelz_'.$version);
   	
 	$table_attributes = array('id' => 'rasdels_list');
 	$headers = array('Раздел');
 	while ( ($row = $q->fetchArray()))
 	{
-		$razdel_link = url('okved/rasdel/'.$row['rid'], array('absolute' => TRUE));
+		$razdel_link = url('documents/okved/rasdel/'.$row['rid'], array('absolute' => TRUE));
 		$attributes = array();
 		$search="Подраздел";
 		if ( strncasecmp($row['name'], $search, strlen($search)) == 0 )
@@ -205,19 +219,20 @@ $q = $db->query('SELECT * FROM razdelz_'.$version);
 		$rows[] = array( l($row['name'], $razdel_link, $attributes));
 	}
 //+ theme('table', $headers, $rows, $table_attributes)
-return head_print() . '<div id=mainpage_text><h3>' . variable_get('okved_statictext_mainpage', '') . '</h3></div>' . theme('table', $headers, $rows, $table_attributes) ;	
+//return '<div id=mainpage_text><h3>' . variable_get('okved_statictext_mainpage', '') . '</h3></div>' . theme('table', $headers, $rows, $table_attributes) ;	
+return theme('table', $headers, $rows, $table_attributes) ;	
 
 }
 
 function okveds_from_query($q, $search = "")
 {
-	drupal_add_js(drupal_get_path('module', 'okved') . '/okved.js');
+	
 	
 	$table_attributes = array('id' => 'okveds_list');
-	$headers = array('<input type="checkbox" class="okved_allcheck" name="okved_allcheck">', 'Номер', 'Наименование / Дополнительное описание при наведении');
+	$headers = array(array('data' => '<input type="checkbox" class="okved_allcheck" name="okved_allcheck">', 'width' => "3%"), array('data' => 'Номер', 'width' => "7%"), array('data' => 'Наименование / Дополнительное описание при наведении', 'width' => "90%"));
 	while ( ($row = $q->fetchArray()))
 	{
-		if ($search != "" && stripos($row['name'], $search) === false && stripos($row['name'], $search)  != 0 ){
+		if ($search != "" &&  gettype (stripos($row['name'], $search)) == "boolean" ){
 
 			 continue;
 		 }
@@ -225,7 +240,7 @@ function okveds_from_query($q, $search = "")
 		if ($row['addition'] != "") 
 		{
 			$rows[] = array('class' => 'block', 'data' => array(array('data' => sprintf( '<input type="checkbox" class="okved_check" name="okved_check" value="%s">', $row['oid']), 'valign' => 'top') ,array('data' => $row['number'], 'valign' => 'top'), 
-array('class' => 'name', 'valign' => 'top', 'data' => $row['name'].'<img src="'.drupal_get_path('module', 'okved').'/images/up_arrow.jpg" align="right">'.sprintf('<p class="addition" style="display: none;">%s</p>', nl2br($row['addition'])))));
+array('class' => 'name', 'valign' => 'top', 'data' => $row['name'].'<img src="'.url(drupal_get_path('module', 'okved')).'/images/up_arrow.jpg" align="right">'.sprintf('<p class="addition" style="display: none;">%s</p>', nl2br($row['addition'])))));
 		} else {
 			
 			$rows[] = array(array('data' => sprintf( '<input type="checkbox" class="okved_check" name="okved_check" value="%s">', $row['oid']), 'valign' => 'top'),
@@ -237,7 +252,7 @@ array('class' => 'name', 'valign' => 'top', 'data' => $row['name'].'<img src="'.
 return(theme('table', $headers, $rows, $table_attributes));
 }
 
-function okveds_search_print($search, $checked_only = false)
+function okveds_search_print($search, $checked_only = false, $rasdel = 1)
 {
 $db = get_db();
 $version = get_version();
@@ -248,9 +263,24 @@ if($checked_only == true)
 	$checked_list = split ( ",", $_COOKIE["checked_okveds_" . $version] );
 }	
 
-$q = $db->query('SELECT * FROM okveds_'.$version);
+$query = 'SELECT * FROM okveds_'.$version;
+
+if ($rasdel==1) {		//Если это "Все разделы"
+	;
+} else { 				//Если нет, ищем по разделу + подразделам
+	$query .=' WHERE razdel_id='.$rasdel;
+	
+	$q = $db->query('SELECT rid FROM razdelz_'.$version.' WHERE father='.$rasdel);
+	while ($row = $q->fetchArray())
+	{
+		$query .= ' OR razdel_id='.$row['rid'];
+	}
+}
+
+
+$q = $db->query($query);
   
-return head_print($search) . print_page_link() . okveds_from_query($q, $search);
+return print_page_link() . okveds_from_query($q, $search);
 }
 
 function okveds_list_print($listid)
@@ -273,14 +303,12 @@ foreach ($checked_list as $checkid) {
 }
 $q = $db->query('SELECT * FROM okveds_'.$version . $filter);
   
-return head_print('', $listid) . okveds_from_query($q);
+return okveds_from_query($q);
 }
 
 function print_page_link()
 {
-
-//return '<a href="#" rel="nofollow" id=printlink">Страница для печати</a>';
-return '<a href="#" rel="nofollow" id=printlink onClick="printpage(); return false;">Страница для печати</a>';
+return '&nbsp;<a href="'.url('documents/okved') . '" onClick="' . $activate1 . '" >Выбор раздела</a>' .'&nbsp;|&nbsp;'.  '<a href="#" rel="nofollow" id=printlink onClick="printpage(); return false;">Страница для печати</a>';
 }
 
 function okveds_userlist_print()
@@ -290,9 +318,9 @@ $version = get_version();
 
 $filter="";
 $checked_list = split ( ",", $_COOKIE["checked_okveds_" . $version] );
-//printf($_COOKIE["checked_okveds"]);
 
 //if ( $_COOKIE["checked_okveds"]) == "") drupal_set_message('Ни одна позиция не была выбрана', 'error');
+$have_check = false;
 
 foreach ($checked_list as $checkid) {
 	if($checkid!='' ||  $checkid !=null){
@@ -307,7 +335,9 @@ foreach ($checked_list as $checkid) {
 	
 if ($have_check) {
   $q = $db->query('SELECT * FROM okveds_' . $version . ' ' . $filter);  
-  return head_print('', 0) . print_page_link() . okveds_from_query($q);
+//  return head_print('', 0) . print_page_link() . okveds_from_query($q);
+  return  print_page_link() . okveds_from_query($q);
+
 } else {
   return "Ни одна позиция не была выбрана";
 }
@@ -333,7 +363,7 @@ if ($rasdel==1) {		//Если это "Все разделы"
 }
 $q = $db->query('SELECT * FROM okveds_'.$version . $filter);
   
-return head_print() . print_page_link() . okveds_from_query($q);
+return print_page_link() . okveds_from_query($q);
 }
 
 function rasdel_name($rasdel)
@@ -341,9 +371,10 @@ function rasdel_name($rasdel)
 $db = get_db();
 $version = get_version();
 
-$q = $db->query('SELECT * FROM razdelz_'.$version . ' WHERE rid='.$rasdel . ' LIMIT 1');
+//print $rasdel;
+$q = $db->query('SELECT name FROM razdelz_'.$version . ' WHERE rid='.$rasdel . ' LIMIT 1');
 $row = $q->fetchArray();
-
+//return '123';
 return $row['name'];
 }
 

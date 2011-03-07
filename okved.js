@@ -1,4 +1,24 @@
-function printpage(){
+function ajax_search(url, search_str, rasdel){	//ajax Поиск
+
+var quer = url+'?searchstr=' + encodeURI(search_str);
+if  (typeof(rasdel) != 'undefined')
+{
+  quer += '&rasdel='+rasdel;
+  
+}
+  
+$('#search_container').load(quer);
+};
+
+function ajax_checklists(url, listid){	//ajax Поиск
+
+var quer = url+'?listid=' + encodeURI(listid);
+  
+$('#checklist_container').load(quer);
+
+};
+
+function printpage(){	//Делаем страницу для печати
 
 content='<table border=\"1\" cellspacing=\"1\">';
 
@@ -29,34 +49,33 @@ w.document.close();
 return false;
 }
 	
-$(document).ready(function(){
-
-	function getCookie(name) {
-		var cookie = " " + document.cookie;
-		var search = " " + name + "=";
-		var setStr = null;
-		var offset = 0;
-		var end = 0;
-		if (cookie.length > 0) {
-			offset = cookie.indexOf(search);
-			if (offset != -1) {
-				offset += search.length;
-				end = cookie.indexOf(";", offset)
-				if (end == -1) {
-					end = cookie.length;
-				}
-				setStr = unescape(cookie.substring(offset, end));
+function getCookie(name) {
+	var cookie = " " + document.cookie;
+	var search = " " + name + "=";
+	var setStr = null;
+	var offset = 0;
+	var end = 0;
+	if (cookie.length > 0) {
+		offset = cookie.indexOf(search);
+		if (offset != -1) {
+			offset += search.length;
+			end = cookie.indexOf(";", offset)
+			if (end == -1) {
+				end = cookie.length;
 			}
+			setStr = unescape(cookie.substring(offset, end));
 		}
-		return(setStr);
-	};
+	}
+	return(setStr);
+};
 	
-	function get_okved_version() {
-	  var vers = getCookie("okved_version");
-	  if (vers == null) return '1';
-	  return vers;
-	};
+function get_okved_version() {		//Возвращает выбранную пользователем версию закона
+  var vers = getCookie("okved_version");
+  if (vers == null) return '1';
+  return vers;
+};
 	
+function register_events() {	
 	old_cookie = getCookie("checked_okveds_" + get_okved_version());
 	if(old_cookie) {
 	  arr = old_cookie.split(",");
@@ -85,7 +104,7 @@ $(document).ready(function(){
 		};
 		var new_cookie = arr.join();
 
-		document.cookie = cookie_name + "=" + new_cookie;
+		document.cookie = cookie_name + "=" + new_cookie + "; path=/";
 	};
 	
 	$("#okveds_list .okved_check").change(function() {
@@ -111,6 +130,7 @@ $(document).ready(function(){
 	      });		
 		
 	});
+	
     $("#okveds_list .block").click(function(){
 		if (checkInFocus == true) return true;
 		$(this).find("p").slideToggle("fast");
@@ -122,4 +142,13 @@ $(document).ready(function(){
 		}
 		$(this).find("img").attr("src", new_src);
 		$(this).toggleClass("active");
-     });});
+     });
+  
+}
+
+/*$(document).ready(function(){
+
+  register_events();
+    
+});  ///document.ready
+  */  

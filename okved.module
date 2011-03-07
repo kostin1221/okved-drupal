@@ -20,47 +20,39 @@ function okved_perm() {
  * Implementation of hook_menu().
  */
 function okved_menu() {
-  $items['okved'] = array(
+  $items['documents/okved'] = array(
     'title' => 'ОКВЭД',
     'page callback' => 'razdels_page',
     'access arguments' => array('access okved'),
     'type' => MENU_NORMAL_ITEM,
   );
 
-  $items['okved/rasdel/%'] = array(
+  $items['documents/okved/ajaxsearch'] = array(
+	  'title' => 'ajaxsearch',
+	  'page callback' => 'ajaxsearch',
+	  'access arguments' => array('access okved'),
+	  'type' => MENU_CALLBACK,
+  );
+  
+  $items['documents/okved/ajaxchecklist'] = array(
+	  'title' => 'ajaxchecklist',
+	  'page callback' => 'ajaxchecklist',
+	  'access arguments' => array('access okved'),
+	  'type' => MENU_CALLBACK,
+  );
+  	
+  $items['documents/okved/rasdel/%'] = array(
     'title callback' => '_razdel_title_callback',
-    'title arguments' => array(2),
-    'page callback' => 'okveds_page',
-    'page arguments' => array(2),
+    'title arguments' => array(3),
+    'page callback' => 'razdels_page',
+    'page arguments' => array(3),
     'access arguments' => array('access okved'),
     'type' => MENU_CALLBACK,
   );
   
-  $items['okved/search/%'] = array(
+  $items['documents/okved/search/%'] = array(
     'title' => 'Результаты поиска',
     'page callback' => 'okveds_search',
-    'page arguments' => array(2),
-    'access arguments' => array('access okved'),
-    'type' => MENU_CALLBACK,
-  );
-  
-  $items['okved/userlist'] = array(
-    'title' => 'Результаты поиска',
-    'page callback' => 'okveds_userlist',
-    'access arguments' => array('access okved'),
-    'type' => MENU_CALLBACK,
-  );
-  
-  $items['quicktabs/ajax/node/fullsearch'] = array(
-    'page callback' => 'okved_ajax_fullsearch',
-    'access callback' => 'user_access',
-    'access arguments' => array('access okved'),
-    'type' => MENU_CALLBACK,
-  );
-  
-  $items['okved/defaultlist/%'] = array(
-    'title' => 'Результаты поиска',
-    'page callback' => 'okveds_list',
     'page arguments' => array(2),
     'access arguments' => array('access okved'),
     'type' => MENU_CALLBACK,
@@ -73,12 +65,36 @@ function okved_menu() {
     'page arguments' => array('okved_settings'),
    // 'access callback' => 'user_access',
     'access arguments' => array('administer site configuration'),
-    'type' => MENU_NORMAL_ITEM
+    'type' => MENU_NORMAL_ITEM,
   );
    
   return $items;
 }
 
+function ajaxchecklist(){
+  $listid = strtolower($_GET['listid']);
+
+  if (!is_numeric($listid)) {
+    drupal_access_denied();
+  }
+  echo  okveds_list_print($listid);
+  echo '<script type="text/javascript">register_events();</script>';
+
+}
+
+function ajaxsearch(){
+  $search_str = mysql_escape_string(strtolower($_GET['searchstr']));
+  $rasdel = $_GET['rasdel'];
+
+  if (!$rasdel) $rasdel = 1;		//1 это все разделы
+  if (!is_numeric($rasdel)) {
+    drupal_access_denied();
+  }
+  
+  echo  okveds_search_print($search_str, false, $rasdel);
+  echo '<script type="text/javascript">register_events();</script>';
+  return;
+}
 function okved_settings() {
   
   return okved_settings_print();
@@ -87,10 +103,6 @@ function okved_settings() {
 function _razdel_title_callback($base_string) {
 
   return rasdel_name($base_string);
-}
-
-function okved_ajax_fullsearch() {
-  return '123';
 }
 
 function okveds_search($filter) {
@@ -143,7 +155,8 @@ function okved_block($op = 'list', $delta = 0) {
 
 function razdels_page() {
 css_add();
-return razdels_print();
+//return razdels_print();
+return head_print();
 }
 
 ?>
